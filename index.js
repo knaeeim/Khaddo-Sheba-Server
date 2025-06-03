@@ -1,5 +1,5 @@
 const express = require("express");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 require("dotenv").config();
 const cors = require("cors");
@@ -19,9 +19,23 @@ admin.initializeApp({
 app.use(cors());
 app.use(express.json());
 
-// 5dKPsAXlnEk3kvlR
-// assignment-11
+const verifyFirebaseToken = async (req, res, next ) => {
+    const authHeader = req.headers?.authorization; 
+    if(!authHeader || !authHeader.startsWith("Bearer ")){
+        return res.status(401).send({ message: "Unauthorized access" });
+    }
 
+    const token = authHeader.split(" ")[1];
+    
+    try {
+        const decodedToken = await admin.auth().verifyIdToken(token);
+        req.decodedToken = decodedToken;
+        next();
+    }
+    catch (error) {
+        return req.status(401).send({ message: "Unauthorized access" });
+    }
+} 
 
 
 
@@ -42,6 +56,7 @@ async function run() {
         // await client.connect();
 
         // Database and collection will be created here 
+        const foodCollection = client.db("foodDB").collection("foods");
 
 
         // api starts 
@@ -49,6 +64,38 @@ async function run() {
         app.get("/", (req, res) => {
             res.send("Server is running");
         })
+
+        // get all foods
+        app.get("/foods", async (req, res) => {
+            const foods = await foodCollection.find().toArray();
+            res.send(foods);
+        })
+
+        // get single food by id 
+        app.get("/foods/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id : new ObjectId(id) };
+            const food = await foodCollection.findOne(query);
+            res.send(food);
+        })
+
+
+
+        app.post("/addFood", verifyFirebaseToken, async (req, res) => {
+            const food = req.body;
+
+            const decodedTokenEmail = req.decodedToken.email;
+            console.log(decodedTokenEmail);
+            
+            if(req.body.email !== decodedTokenEmail){
+                return res.status(403).send({ message: "Forbidden access" });
+            }
+
+            console.log(food);
+            const result = await foodCollection.insertOne(food);
+            res.send(result);
+        })
+
 
 
         // Send a ping to confirm a successful connection
