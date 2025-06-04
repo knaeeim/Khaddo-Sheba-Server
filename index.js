@@ -57,6 +57,7 @@ async function run() {
 
         // Database and collection will be created here 
         const foodCollection = client.db("foodDB").collection("foods");
+        const requestedFoodsCollection = client.db("foodDB").collection("requestedFoods");
 
 
         // api starts 
@@ -72,14 +73,12 @@ async function run() {
         })
 
         // get single food by id 
-        app.get("/foods/:id", async (req, res) => {
+        app.get("/foods/:id",  verifyFirebaseToken, async (req, res) => {
             const id = req.params.id;
             const query = { _id : new ObjectId(id) };
             const food = await foodCollection.findOne(query);
             res.send(food);
         })
-
-
 
         app.post("/addFood", verifyFirebaseToken, async (req, res) => {
             const food = req.body;
@@ -95,7 +94,33 @@ async function run() {
             const result = await foodCollection.insertOne(food);
             res.send(result);
         })
+        
 
+        
+        // requested foods API's
+        app.get("/myRequestedFoods", verifyFirebaseToken, async (req, res) => {
+            const email = req.query.email;
+            const decodedTokenEmail = req.decodedToken.email;
+
+            if(email !== decodedTokenEmail ){
+                return res.status(403).send({ message: "Forbidden Access"})
+            }
+
+            // now find the foods by email
+            const query = { email: email }
+            const foods = await foodCollection.find(query).toArray(); 
+            res.send(foods);
+        })
+
+        app.post("/myRequestedFoods", verifyFirebaseToken, async (req, res) => {
+            const food = req.body;
+            console.log(food);
+            if(food.email !== req.decodedTokenEmail.email){
+                return res.status(403).send({ message: "Forbidden access" });
+            }
+            const result = await requestedFoodsCollection.insertOne(food);
+            res.send(result);
+        })
 
 
         // Send a ping to confirm a successful connection
