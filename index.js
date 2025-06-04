@@ -68,24 +68,31 @@ async function run() {
         // get all foods
         app.get("/foods", async (req, res) => {
             const query = req.query.sortBy;
+            const queryEmail = req.query.email;
             const limit = parseInt(req.query.limit) || 0;
 
             let sortQuery = {};
+            if (query === "date" || query === "quantity") {
+                if (query === "date") {
+                    sortQuery = { date: 1 };
+                } else if (query === "quantity") {
+                    sortQuery = { foodQuantity: -1 };
+                }
 
-            if (query === "date") {
-                sortQuery = { date: 1 };
-            } else if (query === "quantity") {
-                sortQuery = { foodQuantity: -1 };
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // Set time to midnight to compare only dates
+                const foods = await foodCollection
+                    .find({ date: { $gte: today } })
+                    .sort(sortQuery)
+                    .limit(limit)
+                    .toArray();
+
+                res.send(foods);
             }
-
-            const today = new Date(); 
-            today.setHours(0, 0, 0, 0); // Set time to midnight to compare only dates
-            const foods = await foodCollection
-                .find({ date : { $gte: today }})
-                .sort(sortQuery).limit(limit)
-                .toArray();
-
-            res.send(foods);
+            else{
+                const foodsByEmail = await foodCollection.find({ email : queryEmail }).toArray();
+                res.send(foodsByEmail);
+            }
         });
 
         // get single food by id
@@ -106,7 +113,7 @@ async function run() {
                 return res.status(403).send({ message: "Forbidden access" });
             }
 
-            if(food.date) {
+            if (food.date) {
                 food.date = new Date(food.date);
             }
 
