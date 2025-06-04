@@ -68,7 +68,7 @@ async function run() {
 
         // get all foods
         app.get("/foods", async (req, res) => {
-            const foods = await foodCollection.find().toArray();
+            const foods = await foodCollection.find().sort({date: 1}).toArray();
             res.send(foods);
         })
 
@@ -107,6 +107,7 @@ async function run() {
         // requested foods API's
         app.get("/myRequestedFoods", verifyFirebaseToken, async (req, res) => {
             const email = req.query.email;
+            console.log(email);
             const decodedTokenEmail = req.decodedToken.email;
 
             if(email !== decodedTokenEmail ){
@@ -114,15 +115,16 @@ async function run() {
             }
 
             // now find the foods by email
-            const query = { email: email }
-            const foods = await foodCollection.find(query).toArray(); 
+            const query = { requestedUserEmail: email }
+            const foods = await requestedFoodsCollection.find(query).toArray(); 
             res.send(foods);
         })
 
         app.post("/myRequestedFoods", verifyFirebaseToken, async (req, res) => {
             const food = req.body;
             console.log(food);
-            if(food.email !== req.decodedTokenEmail.email){
+            const decodedTokenEmail = req.decodedToken.email
+            if(food.requestedUserEmail !== decodedTokenEmail){
                 return res.status(403).send({ message: "Forbidden access" });
             }
             const result = await requestedFoodsCollection.insertOne(food);
