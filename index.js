@@ -17,7 +17,11 @@ admin.initializeApp({
 });
 
 //  Middlewares
-app.use(cors());
+app.use(
+    cors({
+        origin: ["https://assignment-11-e46ad.web.app/", "http://localhost:5173",],
+    })
+);
 app.use(express.json());
 
 const verifyFirebaseToken = async (req, res, next) => {
@@ -88,9 +92,10 @@ async function run() {
                     .toArray();
 
                 res.send(foods);
-            }
-            else{
-                const foodsByEmail = await foodCollection.find({ email : queryEmail }).toArray();
+            } else {
+                const foodsByEmail = await foodCollection
+                    .find({ email: queryEmail })
+                    .toArray();
                 res.send(foodsByEmail);
             }
         });
@@ -122,31 +127,30 @@ async function run() {
             res.send(result);
         });
 
-
-        app.put("/foods/:id", verifyFirebaseToken, async(req, res) => {
+        app.put("/foods/:id", verifyFirebaseToken, async (req, res) => {
             const id = req.params.id;
             const food = req.body;
 
             const decodedTokenEmail = req.decodedToken.email;
 
-            if( food.email !== decodedTokenEmail){
+            if (food.email !== decodedTokenEmail) {
                 return res.status(403).send({ message: "Forbidden access" });
             }
 
-            if (food?.date){
+            if (food?.date) {
                 food.date = new Date(food.date);
             }
 
             const query = { _id: new ObjectId(id) };
             const updatedDoc = {
                 $set: {
-                    ...food
-                }
-            }
+                    ...food,
+                },
+            };
 
             const result = await foodCollection.updateOne(query, updatedDoc);
             res.send(result);
-        })
+        });
 
         app.delete("/foods/:id", async (req, res) => {
             const id = req.params.id;
@@ -183,10 +187,10 @@ async function run() {
         });
 
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log(
-            "Pinged your deployment. You successfully connected to MongoDB!"
-        );
+        // await client.db("admin").command({ ping: 1 });
+        // console.log(
+        //     "Pinged your deployment. You successfully connected to MongoDB!"
+        // );
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
