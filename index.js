@@ -122,6 +122,32 @@ async function run() {
             res.send(result);
         });
 
+
+        app.put("/foods/:id", verifyFirebaseToken, async(req, res) => {
+            const id = req.params.id;
+            const food = req.body;
+
+            const decodedTokenEmail = req.decodedToken.email;
+
+            if( food.email !== decodedTokenEmail){
+                return res.status(403).send({ message: "Forbidden access" });
+            }
+
+            if (food?.date){
+                food.date = new Date(food.date);
+            }
+
+            const query = { _id: new ObjectId(id) };
+            const updatedDoc = {
+                $set: {
+                    ...food
+                }
+            }
+
+            const result = await foodCollection.updateOne(query, updatedDoc);
+            res.send(result);
+        })
+
         app.delete("/foods/:id", async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
