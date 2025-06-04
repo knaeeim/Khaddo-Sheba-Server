@@ -94,9 +94,16 @@ async function run() {
             const result = await foodCollection.insertOne(food);
             res.send(result);
         })
+
+        app.delete("/foods/:id", async (req, res) => {
+            const id = req.params.id; 
+            const query = { _id: new ObjectId(id) };
+            const result = await foodCollection.deleteOne(query);
+            res.send(result)
+        })
         
 
-        
+
         // requested foods API's
         app.get("/myRequestedFoods", verifyFirebaseToken, async (req, res) => {
             const email = req.query.email;
