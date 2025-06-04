@@ -19,7 +19,7 @@ admin.initializeApp({
 //  Middlewares
 app.use(
     cors({
-        origin: ["https://assignment-11-e46ad.web.app/", "http://localhost:5173",],
+        origin: ["https://assignment-11-e46ad.web.app", "http://localhost:5173",],
     })
 );
 app.use(express.json());
