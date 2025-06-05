@@ -19,7 +19,10 @@ admin.initializeApp({
 //  Middlewares
 app.use(
     cors({
-        origin: ["https://assignment-11-e46ad.web.app", "http://localhost:5173",],
+        origin: [
+            "https://assignment-11-e46ad.web.app",
+            "http://localhost:5173",
+        ],
     })
 );
 app.use(express.json());
@@ -37,8 +40,16 @@ const verifyFirebaseToken = async (req, res, next) => {
         req.decodedToken = decodedToken;
         next();
     } catch (error) {
-        return req.status(401).send({ message: "Unauthorized access" });
+        return res.status(401).send({ message: "Unauthorized access" });
     }
+};
+
+const verifyTokenEmail = (req, res, next) => {
+    const decodedTokenEmail = req.decodedToken.email;
+    if (req.body.email !== decodedTokenEmail) {
+        return res.status(403).send({ message: "Forbidden access" });
+    }
+    next();
 };
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.plgxbak.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -108,20 +119,12 @@ async function run() {
             res.send(food);
         });
 
-        app.post("/addFood", verifyFirebaseToken, async (req, res) => {
+        app.post("/addFood", verifyFirebaseToken, verifyTokenEmail, async (req, res) => {
             const food = req.body;
-
-            const decodedTokenEmail = req.decodedToken.email;
-            console.log(decodedTokenEmail);
-
-            if (req.body.email !== decodedTokenEmail) {
-                return res.status(403).send({ message: "Forbidden access" });
-            }
 
             if (food.date) {
                 food.date = new Date(food.date);
             }
-
             console.log(food);
             const result = await foodCollection.insertOne(food);
             res.send(result);
