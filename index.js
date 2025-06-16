@@ -87,10 +87,13 @@ async function run() {
             const limit = parseInt(req.query.limit) || 0;
 
             let sortQuery = {};
-            if (query === "date" || query === "quantity") {
-                if (query === "date") {
+            if (query === "dateAsc" || query === "quantity" || query === "dateDsc") {
+                if (query === "dateAsc") {
                     sortQuery = { date: 1 };
-                } else if (query === "quantity") {
+                } else if ( query === "dateDsc"){
+                    sortQuery = { date: -1 };
+                } 
+                else if (query === "quantity") {
                     sortQuery = { foodQuantity: -1 };
                 }
 
@@ -110,6 +113,14 @@ async function run() {
                 res.send(foodsByEmail);
             }
         });
+
+        // get all foods without any sorting or anything
+        app.get("/allFoods", async (req, res) => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Set time to midnight to compare only dates
+            const result = await foodCollection.find({ date : { $gte: today }}).toArray();
+            res.send(result)
+        })
 
         // get single food by id
         app.get("/foods/:id", verifyFirebaseToken, async (req, res) => {
